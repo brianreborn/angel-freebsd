@@ -1,4 +1,4 @@
-#!/rescue/sh
+#!/BSD/sh
 # Build and install the already-patched GENERIC-DEBUG. Does not reboot.
 # The source tree already has P2_AMD64COMPAT and amd64compat_ud.
 # The installed /boot/kernel does not, until this finishes.

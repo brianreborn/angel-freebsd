@@ -1,4 +1,4 @@
-#!/rescue/sh
+#!/BSD/sh
 # Build and run the PSHUFB check. The test opts in itself: a separate
 # sysctl(8) process would set the flag and then exit, leaving the test off.
 set -eu

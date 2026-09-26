@@ -1,4 +1,4 @@
-#!/rescue/sh
+#!/BSD/sh
 # Download CUDA 6.5 and extract it inside the local c7 tree.
 # Does not run NVIDIA's installer and does not touch the FreeBSD kernel.
 set -eu

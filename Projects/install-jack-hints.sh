@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/BSD/sh
 # Persist the ALC662 jack-sense workaround in the boot hints.
 set -eu
 if [ "$(id -u)" -ne 0 ]; then

@@ -1,4 +1,4 @@
-#!/rescue/sh
+#!/BSD/sh
 # One pass: /BSD -> /rescue, unpack the inner CUDA archive, run pshufb.
 set -eu
 if [ ! -x /BSD/sh ]; then

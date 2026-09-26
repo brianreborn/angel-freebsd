@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/BSD/sh
 # Build vadd.cu with CUDA 6.5 for sm_11 only.
 # Does not use Rocky 9 (/compat/linux while linux_base-rl9 is installed).
 # Exits non-zero unless nvcc itself actually starts.

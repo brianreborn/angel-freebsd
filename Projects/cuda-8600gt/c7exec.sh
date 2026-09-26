@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/BSD/sh
 # Run a program inside the local c7 user chroot.
 # Usage: /bin/sh c7exec.sh /path-inside-the-jail [args...]
 # Example: /bin/sh c7exec.sh /compat/linux/bin/bash --version

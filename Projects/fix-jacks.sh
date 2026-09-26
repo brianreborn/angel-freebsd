@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/BSD/sh
 # Unmute the ALC662 outputs and stop pin 24's jack sense from muting
 # the rear jack (nid 20) on pcm0. Needs root. Does not reboot.
 set -eu

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/BSD/sh
 # Apply the in-kernel SSE translator, set up the local CentOS 7 tree,
 # build GENERIC-DEBUG, and reboot. Stops before reboot if a step fails.
 #

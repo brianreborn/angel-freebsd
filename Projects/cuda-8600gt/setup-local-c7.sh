@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/BSD/sh
 # Install CentOS 7 (linux_base-c7) under this project only.
 # Does not pkg-install it, does not write /compat/linux, does not touch Rocky 9.
 #

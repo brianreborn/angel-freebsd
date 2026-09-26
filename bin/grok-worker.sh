@@ -5,6 +5,7 @@
 set -eu
 export SHELL=/BSD/sh
 export HOME=/home/green
+export PATH=/BSD:/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
 /etc/rc.d/netwait onestart
 cd /home/green
 exec /home/green/.grok/bin/grok --continue
