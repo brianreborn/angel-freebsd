@@ -40,9 +40,7 @@ grep -q amd64compat_sse "$SRC/sys/conf/files.amd64"
 echo "== build and install $KERNCONF =="
 cd "$SRC"
 make -j2 buildkernel KERNCONF="$KERNCONF"
-# pkgbase refuses installkernel unless this is set. The replaced
-# kernel is left at /boot/kernel.old.
-ALLOW_PKGBASE_INSTALLKERNEL=yes make installkernel KERNCONF="$KERNCONF"
+/BSD/sh "$MOD/install-kernel.sh"
 
 echo "== reboot =="
 echo "After boot: /bin/sh $MOD/test-pshufb.sh"

@@ -13,9 +13,5 @@ if ! grep -q amd64compat_ud /usr/src/sys/amd64/amd64/trap.c; then
 fi
 cd /usr/src
 make -j2 buildkernel KERNCONF=GENERIC-DEBUG
-# This host installs the kernel from pkgbase. Without the flag,
-# installkernel refuses to replace /boot/kernel. The previous kernel
-# is saved as /boot/kernel.old (stock GENERIC-DEBUG, no translator).
-ALLOW_PKGBASE_INSTALLKERNEL=yes make installkernel KERNCONF=GENERIC-DEBUG
-echo "installed. /boot/kernel.old is the kernel that was just replaced."
-echo "Reboot, then: /bin/sh /home/green/Projects/amd64compat/test-pshufb.sh"
+/BSD/sh /home/green/Projects/amd64compat/install-kernel.sh
+echo "Reboot, then: /BSD/sh /home/green/Projects/amd64compat/test-pshufb.sh"

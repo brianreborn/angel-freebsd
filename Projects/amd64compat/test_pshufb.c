@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/sysctl.h>
 
 void amd64compat_pshufb(uint8_t dst[16], const uint8_t ctrl[16]);
 void amd64compat_pmovzxbw(uint8_t dst[16], const uint8_t src[8]);
@@ -63,7 +64,11 @@ static volatile sig_atomic_t saw_ill;
 static void
 on_ill(int sig)
 {
+	const char msg[] = "pshufb still SIGILL; translator did not handle it\n";
+
 	saw_ill = 1;
+	(void)sig;
+	write(2, msg, sizeof(msg) - 1);
 	_exit(2);
 }
 
@@ -86,6 +91,13 @@ main(void)
 	uint8_t z[16] __attribute__((aligned(16)));
 	uint8_t expect[16] __attribute__((aligned(16)));
 	struct sigaction sa;
+	int one = 1;
+
+	/* kern.amd64compat applies to the calling process, not its parent. */
+	if (sysctlbyname("kern.amd64compat", NULL, NULL, &one, sizeof(one)) != 0) {
+		perror("kern.amd64compat");
+		return (1);
+	}
 
 	memcpy(a, table, 16);
 	memcpy(b, table, 16);

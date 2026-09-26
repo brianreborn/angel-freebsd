@@ -1,0 +1,26 @@
+--- a/sys/sys/proc.h
++++ b/sys/sys/proc.h
+@@ -896,9 +896,10 @@
+ 
+ #define	P2_HWT			0x02000000	/* Process is using HWT. */
+ #define	P2_AMD64COMPAT		0x04000000	/* Emulate missing user SSE
+-						   opcodes on #UD. Inherited
+-						   across fork and exec. */
++						   opcodes on #UD. On for
++						   proc0; inherited across
++						   fork and exec. */
+ 
+ /* Flags protected by proctree_lock, kept in p_treeflags. */
+ #define	P_TREE_ORPHANED		0x00000001	/* Reparented, on orphan list */
+--- a/sys/kern/init_main.c
++++ b/sys/kern/init_main.c
+@@ -514,7 +514,8 @@
+ 
+ 	p->p_sysent = &null_sysvec;
+ 	p->p_flag = P_SYSTEM | P_INMEM | P_KPROC;
+-	p->p_flag2 = 0;
++	/* User #UD translation is on unless a process clears it. */
++	p->p_flag2 = P2_AMD64COMPAT;
+ 	p->p_state = PRS_NORMAL;
+ 	p->p_klist = knlist_alloc(&p->p_mtx);
+ 	STAILQ_INIT(&p->p_ktr);
