@@ -60,6 +60,14 @@ ensure_fstab "linsysfs	$BASE/sys	linsysfs	rw,late	0	0" "$BASE/sys"
 ensure_fstab "/tmp	$JAIL/tmp	nullfs	rw,late	0	0" "$JAIL/tmp	nullfs"
 ensure_fstab "/home	$JAIL/home	nullfs	rw,late	0	0" "$JAIL/home	nullfs"
 
+# Root does not have green's GitHub login. Copy the gh config, then
+# point git at it. Do not print the token.
+mkdir -p /root/.config
+rm -rf /root/.config/gh
+cp -R /home/green/.config/gh /root/.config/gh
+chown -R root:wheel /root/.config/gh
+gh auth setup-git
+
 cd /home/green
 if [ ! -d .git ]; then
 	git init
