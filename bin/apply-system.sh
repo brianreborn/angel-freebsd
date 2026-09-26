@@ -26,6 +26,19 @@ if grep -F -q '++ b/sys/kern/init_main.c' "$SRC/sys/sys/proc.h"; then
 	rm -f "$SRC/sys/sys/proc.h.rej" "$SRC/sys/sys/proc.h.orig"
 	echo "repaired proc.h"
 fi
+if ! grep -q 'P_TREE_FIRST_ORPHAN' "$SRC/sys/sys/proc.h"; then
+	awk '
+		/P_TREE_ORPHANED/ && !done {
+			print
+			print "#define	P_TREE_FIRST_ORPHAN	0x00000002	/* First element of orphan list */"
+			done = 1
+			next
+		}
+		{ print }
+	' "$SRC/sys/sys/proc.h" > "$SRC/sys/sys/proc.h.new"
+	mv "$SRC/sys/sys/proc.h.new" "$SRC/sys/sys/proc.h"
+	echo "restored P_TREE_FIRST_ORPHAN"
+fi
 if ! grep -q 'p->p_flag2 = P2_AMD64COMPAT' "$SRC/sys/kern/init_main.c"; then
 	awk '
 		/p->p_flag = P_SYSTEM \| P_INMEM \| P_KPROC/ { print; next }
