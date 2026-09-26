@@ -139,6 +139,6 @@ fi
 
 echo "== kernel =="
 cd "$SRC"
-make -j2 buildkernel KERNCONF=GENERIC-DEBUG
+make -j2 buildkernel KERNCONF=GENERIC-DEBUG NO_KERNELCLEAN=yes
 /BSD/sh "$MOD/install-kernel.sh"
 echo "done. reboot when you want proc0 to start with the translator on."

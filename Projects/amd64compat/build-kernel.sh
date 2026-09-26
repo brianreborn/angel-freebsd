@@ -12,6 +12,6 @@ if ! grep -q amd64compat_ud /usr/src/sys/amd64/amd64/trap.c; then
 	exit 1
 fi
 cd /usr/src
-make -j2 buildkernel KERNCONF=GENERIC-DEBUG
+make -j2 buildkernel KERNCONF=GENERIC-DEBUG NO_KERNELCLEAN=yes
 /BSD/sh /home/green/Projects/amd64compat/install-kernel.sh
 echo "Reboot, then: /BSD/sh /home/green/Projects/amd64compat/test-pshufb.sh"
