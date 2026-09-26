@@ -1,0 +1,79 @@
+# amd64compat
+
+Loadable translator for the Athlon II gap to x86-64-v2: SSSE3, SSE4.1,
+and SSE4.2. Off unless a process opts in. Not loaded by the build.
+
+## Hook
+
+`trap()` in `sys/amd64/amd64/trap.c`, inside `TRAPF_USERMODE`, case
+`T_PRIVINFLT` (user #UD). That case assigns `SIGILL` / `ILL_PRVOPC`
+and has no function pointer. `sv_trap` runs only for `T_PAGEFLT`.
+User-mode `CPUID` is not a trap anywhere in this tree (no CPUID-fault
+MSR path). A module cannot see the fault without the one-function
+pointer in `patch/trap-ud-hook.patch`. Do not install that patch and
+do not kldload until the kernel is rebuilt with it: the module's
+undefined symbols are `amd64_ud_hook` and `amd64_ud_hook_busy`.
+
+The hook returns 0 only after the SSE2 (or integer) substitute has
+written the thread's user XMM / GPR state and `tf_rip` has moved by
+the full instruction length. Kernel #UD never calls it. An unknown
+opcode, a failed fetch, or a process that is not enabled returns
+nonzero and the SIGILL path is unchanged.
+
+## Enable
+
+The running kernel exports `kern.amd64compat`. Set it to 1 in the
+calling process (`P2_AMD64COMPAT`). Inherited across fork and exec.
+Default is off. `/boot/kernel.old` is the stock kernel without it.
+
+```
+/bin/sh test-pshufb.sh
+```
+
+## Opcodes actually translated
+
+| Set    | Instruction | Encoding                         |
+|--------|-------------|----------------------------------|
+| SSSE3  | PSHUFB      | `66 0F 38 00 /r` xmm, xmm/m128   |
+| SSE4.1 | PMOVSXBW    | `66 0F 38 20 /r` xmm, xmm/m64    |
+| SSE4.1 | PMOVZXBW    | `66 0F 38 30 /r` xmm, xmm/m64    |
+| SSE4.1 | PMOVZXBD    | `66 0F 38 31 /r` xmm, xmm/m32    |
+| SSE4.2 | CRC32       | `F2 0F 38 F0 /r` r32/r64, r/m8   |
+| SSE4.2 | CRC32       | `F2 0F 38 F1 /r` r32/r/m32 or r64/r/m64 |
+
+Mandatory prefix, REX, ModRM, SIB, register and memory (including
+RIP-relative, FS/GS bases, and the `0x67` address-size override).
+VEX is not handled. Misaligned memory is not handled. No other
+opcode is guessed.
+
+XMM ops run after `fpuexit` has stored the thread's user FPU state,
+inside `fpu_kern_enter`, via `sse.S` (SSE2 only). CRC32 is the
+Castagnoli reflection `0x82F63B78` on GPRs from the trapframe; it
+does not modify `tf_rflags` (the hardware instruction does not).
+
+POPCNT is not translated: this CPU implements it, so it does not #UD.
+
+## CPUID / LD_PRELOAD
+
+`cpuid_preload.c` ORs SSSE3 (ECX bit 9), SSE4.1 (bit 19), and SSE4.2
+(bit 20) into leaf 1, subleaf 0, and leaves every other bit alone.
+Build: `cc -shared -fPIC -O2 -mno-ssse3 -mno-sse4.1 -mno-sse4.2 -mno-avx -o cpuid_preload.so cpuid_preload.c`
+
+glibc's x86-64-v2 check runs inside ld.so (`init_cpu_features` +
+`_dl_check_isa_level`) before `LD_PRELOAD` is mapped, using a raw
+`cpuid`, not `__get_cpuid`. The preload interposes `__get_cpuid` and
+`__get_cpuid_count` and exports `amd64compat_cpuid`. It cannot by
+itself stop Rocky 9 ld.so from exiting. That remains open.
+
+## Test
+
+`test-pshufb.sh` turns the translator on for this process, builds
+`test_pshufb`, and runs it. The program checks the SSE2 sequences,
+then executes `pshufb xmm1, xmm0` (`66 0F 38 00 C8`). If the
+translator is off, that instruction SIGILLs and the process exits 2.
+
+## Build the module (do not load)
+
+```
+make
+```

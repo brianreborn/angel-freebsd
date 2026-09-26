@@ -1,0 +1,4 @@
+#!/rescue/sh
+# FreeBSD rescue shell. This file lives at /home/green/bin/fbsd-sh.
+# It is not under /compat, and it does not use the CentOS 7 jail.
+exec /rescue/sh "$@"

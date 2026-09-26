@@ -1,0 +1,35 @@
+--- a/sys/amd64/amd64/trap.c
++++ b/sys/amd64/amd64/trap.c
+@@ -111,6 +111,22 @@ static bool trap_user_dtrace(struct trapframe *,
+     int (**hook)(struct trapframe *));
+ #endif
+ 
++/*
++ * Optional user #UD hook. Return 0 if the instruction was emulated and
++ * tf_rip already advanced. amd64_ud_hook_busy covers unload: the module
++ * clears the pointer, then waits until busy is zero. The #UD entry gate
++ * leaves interrupts off; enable them before the hook so it may lock and
++ * touch the FPU save area.
++ */
++int (*amd64_ud_hook)(struct trapframe *);
++volatile int amd64_ud_hook_busy;
++
+ static const char UNKNOWN[] = "unknown";
+ static const char *const trap_msg[] = {
+ 	[0] =			UNKNOWN,			/* unused */
+@@ -407,6 +423,18 @@ trap(struct trapframe *frame)
+ 
+ 		switch (type) {
+ 		case T_PRIVINFLT:	/* privileged instruction fault */
++			enable_intr();
++			atomic_add_int(&amd64_ud_hook_busy, 1);
++			if (amd64_ud_hook != NULL &&
++			    amd64_ud_hook(frame) == 0) {
++				atomic_subtract_int(&amd64_ud_hook_busy, 1);
++				return;
++			}
++			atomic_subtract_int(&amd64_ud_hook_busy, 1);
++
+ 			signo = SIGILL;
+ 			ucode = ILL_PRVOPC;
+ 			break;

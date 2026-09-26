@@ -1,0 +1,60 @@
+--- a/sys/sys/proc.h
++++ b/sys/sys/proc.h
+@@ -895,6 +895,9 @@
+ #define	P2_LOGSIGEXIT_CTL	0x01000000	/* Override kern.logsigexit */
+ 
+ #define	P2_HWT			0x02000000	/* Process is using HWT. */
++#define	P2_AMD64COMPAT		0x04000000	/* Emulate missing user SSE
++						   opcodes on #UD. Inherited
++						   across fork and exec. */
+ 
+ /* Flags protected by proctree_lock, kept in p_treeflags. */
+ #define	P_TREE_ORPHANED		0x00000001	/* Reparented, on orphan list */
+--- a/sys/kern/kern_fork.c
++++ b/sys/kern/kern_fork.c
+@@ -546,7 +546,7 @@
+ 	    P2_PROTMAX_ENABLE | P2_PROTMAX_DISABLE | P2_TRAPCAP |
+ 	    P2_STKGAP_DISABLE | P2_STKGAP_DISABLE_EXEC | P2_NO_NEW_PRIVS |
+ 	    P2_WXORX_DISABLE | P2_WXORX_ENABLE_EXEC | P2_LOGSIGEXIT_CTL |
+-	    P2_LOGSIGEXIT_ENABLE);
++	    P2_LOGSIGEXIT_ENABLE | P2_AMD64COMPAT);
+ 	p2->p_swtick = ticks;
+ 	if (p1->p_flag & P_PROFIL)
+ 		startprofclock(p2);
+--- a/sys/amd64/amd64/trap.c
++++ b/sys/amd64/amd64/trap.c
+@@ -100,6 +100,7 @@ extern inthand_t IDTVEC(bpt), IDTVEC(bpt_pti), IDTVEC(dbg),
+     IDTVEC(int0x80_syscall_pti), IDTVEC(int0x80_syscall);
+ 
+ void __noinline trap(struct trapframe *frame);
++int amd64compat_ud(struct trapframe *);
+ void trap_check(struct trapframe *frame);
+ void dblfault_handler(struct trapframe *frame);
+ 
+@@ -407,6 +408,16 @@ trap(struct trapframe *frame)
+ 
+ 		switch (type) {
+ 		case T_PRIVINFLT:	/* privileged instruction fault */
++			/*
++			 * The #UD gate leaves interrupts disabled. The
++			 * translator may lock and enter the FPU, so they
++			 * have to be on first. Off unless this process
++			 * opted in. Return 0 means tf_rip already advanced.
++			 */
++			enable_intr();
++			if ((p->p_flag2 & P2_AMD64COMPAT) != 0 &&
++			    amd64compat_ud(frame) == 0)
++				return;
+ 			signo = SIGILL;
+ 			ucode = ILL_PRVOPC;
+ 			break;
+--- a/sys/conf/files.amd64
++++ b/sys/conf/files.amd64
+@@ -74,6 +74,8 @@ amd64/amd64/exception.S		standard
+ amd64/amd64/exec_machdep.c	standard
+ amd64/amd64/fpu.c		standard
++amd64/amd64/amd64compat.c	standard
++amd64/amd64/amd64compat_sse.S	standard
+ amd64/amd64/gdb_machdep.c	optional	gdb
+ amd64/amd64/initcpu.c		standard
+ amd64/amd64/io.c		optional	io
