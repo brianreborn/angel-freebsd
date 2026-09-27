@@ -14,10 +14,13 @@ fi
 if [ ! -p "$note" ]; then
 	mkfifo -m 644 "$note"
 fi
-# Holding the fifo open read-write lets the waiter write without blocking
-# when this process is the reader.
-exec 3<>"$note"
-read -r line <&3
+if [ -f "$res" ]; then
+	cat "$res"
+	code=$(awk '/^exit / { print $2 }' "$res")
+	exit "${code:-0}"
+fi
+# Read-only open blocks until the waiter writes. A newline ends the read.
+read -r line < "$note"
 printf '%s\n' "$line"
 case "$line" in
 *"exit "*)

@@ -1,0 +1,14 @@
+# Extra default route for USB tether interfaces. Multipath is already on,
+# so this does not replace the wired default. ue0 and ue1 both qualify.
+case "$reason" in
+BOUND|REBIND|RENEW|REBOOT)
+	case "$interface" in
+	ue[0-9]*)
+		for gw in $new_routers; do
+			/sbin/route add default "$gw" >/dev/null 2>&1 || true
+		done
+		/BSD/sh /home/green/bin/pf-tether-reload.sh >/dev/null 2>&1 || true
+		;;
+	esac
+	;;
+esac

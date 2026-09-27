@@ -19,7 +19,24 @@ main(void)
 	float a[256], b[256], c[256];
 	float *da, *db, *dc;
 	cudaError_t err;
-	int i;
+	cudaDeviceProp prop;
+	int i, dev;
+
+	err = cudaGetDevice(&dev);
+	if (err != cudaSuccess) {
+		printf("cudaGetDevice: %s\n", cudaGetErrorString(err));
+		return 1;
+	}
+	err = cudaGetDeviceProperties(&prop, dev);
+	if (err != cudaSuccess) {
+		printf("cudaGetDeviceProperties: %s\n", cudaGetErrorString(err));
+		return 1;
+	}
+	printf("%s %d.%d\n", prop.name, prop.major, prop.minor);
+	if (prop.major != 1) {
+		printf("need compute 1.x\n");
+		return 1;
+	}
 
 	for (i = 0; i < n; i++) {
 		a[i] = (float)i;

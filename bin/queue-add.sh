@@ -7,10 +7,12 @@
 set -eu
 id=${1:?id}
 pend=/var/root-queue/pending
+note=/home/green/root-queue/notes/$id
 tmp=$pend/$id.sh.partial
+mkdir -p /home/green/root-queue/notes /home/green/root-queue/wait-log
+if [ ! -p "$note" ]; then
+	mkfifo -m 644 "$note"
+fi
 cat > "$tmp"
 mv "$tmp" "$pend/$id.sh"
-mkdir -p /home/green/root-queue/pids /home/green/root-queue/wait-log
-# Register for USR1 before the root waiter can finish the item.
-/BSD/sh /home/green/bin/queue-wait.sh "$id" > "/home/green/root-queue/wait-log/$id" 2>&1 &
-echo "queued $id waiting $!"
+echo "queued $id"

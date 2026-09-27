@@ -18,5 +18,9 @@ main(int argc, char **argv)
 	n = strlen(argv[2]);
 	if (write(fd, argv[2], n) != (ssize_t)n)
 		return (1);
+	if (n == 0 || argv[2][n - 1] != '\n') {
+		if (write(fd, "\n", 1) != 1)
+			return (1);
+	}
 	return (0);
 }

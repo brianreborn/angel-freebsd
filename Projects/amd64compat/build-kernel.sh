@@ -11,9 +11,6 @@ if ! grep -q amd64compat_ud /usr/src/sys/amd64/amd64/trap.c; then
 	echo "kernel source is missing amd64compat_ud" >&2
 	exit 1
 fi
-if ! grep -q linux_exec_is_shell /usr/src/sys/compat/linux/linux_misc.c; then
-	patch -d /usr/src -p1 < /home/green/Projects/amd64compat/patch/linux-shell.patch
-fi
 cd /usr/src
 make -j2 buildkernel KERNCONF=GENERIC-DEBUG \
 	NO_KERNELCLEAN=yes NO_KERNELCONFIG=yes
