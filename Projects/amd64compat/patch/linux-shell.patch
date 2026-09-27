@@ -1,0 +1,79 @@
+--- sys/compat/linux/linux_misc.c.orig
++++ sys/compat/linux/linux_misc.c
+@@ -2597,8 +2597,33 @@
+ 	}
+ }
+ 
++/*
++ * Rocky /bin/sh and /bin/bash exit on the x86-64-v2 CPUID check.
++ * Run the FreeBSD rescue shell instead. argv[0] is "sh" so the
++ * crunch binary does not look for a bash applet.
++ */
++static int
++linux_exec_is_shell(const char *upath)
++{
++	char kname[MAXPATHLEN];
++	const char *base, *s;
++	int error;
++
++	if (upath == NULL)
++		return (0);
++	error = copyinstr(upath, kname, sizeof(kname), NULL);
++	if (error != 0)
++		return (0);
++	base = kname;
++	for (s = kname; *s != '\0'; s++) {
++		if (*s == '/')
++			base = s + 1;
++	}
++	return (strcmp(base, "sh") == 0 || strcmp(base, "bash") == 0);
++}
++
+ /*
+  * Custom version of exec_copyin_args(), to copy out argument and environment
+  * strings from the old process address space into the temporary string buffer.
+  * Based on freebsd32_exec_copyin_args.
+  */
+@@ -2611,6 +2636,6 @@
+ 	char *argp, *envp;
+ 	l_uintptr_t *ptr, arg;
+-	int error;
++	int error, shell, first;
+ 
+ 	bzero(args, sizeof(*args));
+ 	if (argv == NULL)
+@@ -2625,8 +2650,8 @@
+ 		return (error);
+ 
+-	/*
+-	 * Copy the file name.
+-	 */
+-	error = exec_args_add_fname(args, fname, UIO_USERSPACE);
++	shell = linux_exec_is_shell(fname);
++	error = exec_args_add_fname(args,
++	    shell ? "/rescue/sh" : fname,
++	    shell ? UIO_SYSSPACE : UIO_USERSPACE);
+ 	if (error != 0)
+ 		goto err_exit;
+@@ -2635,13 +2660,20 @@
+ 	 */
+ 	ptr = argv;
++	first = 1;
+ 	for (;;) {
+ 		error = copyin(ptr++, &arg, sizeof(arg));
+ 		if (error)
+ 			goto err_exit;
+ 		if (arg == 0)
+ 			break;
+ 		argp = PTRIN(arg);
+-		error = exec_args_add_arg(args, argp, UIO_USERSPACE);
++		if (shell && first) {
++			error = exec_args_add_arg(args, "sh", UIO_SYSSPACE);
++			first = 0;
++		} else {
++			error = exec_args_add_arg(args, argp, UIO_USERSPACE);
++			first = 0;
++		}
+ 		if (error != 0)
+ 			goto err_exit;
+ 	}

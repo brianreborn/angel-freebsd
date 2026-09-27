@@ -39,7 +39,8 @@ grep -q amd64compat_sse "$SRC/sys/conf/files.amd64"
 
 echo "== build and install $KERNCONF =="
 cd "$SRC"
-make -j2 buildkernel KERNCONF="$KERNCONF" NO_KERNELCLEAN=yes
+make -j2 buildkernel KERNCONF="$KERNCONF" \
+	NO_KERNELCLEAN=yes NO_KERNELCONFIG=yes
 /BSD/sh "$MOD/install-kernel.sh"
 
 echo "== reboot =="

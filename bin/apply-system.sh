@@ -152,6 +152,9 @@ fi
 
 echo "== kernel =="
 cd "$SRC"
-make -j2 buildkernel KERNCONF=GENERIC-DEBUG NO_KERNELCLEAN=yes
+# NO_KERNELCLEAN skips cleandir. NO_KERNELCONFIG skips re-running config,
+# which rewrites the kernel Makefile and makes the tree look out of date.
+make -j2 buildkernel KERNCONF=GENERIC-DEBUG \
+	NO_KERNELCLEAN=yes NO_KERNELCONFIG=yes
 /BSD/sh "$MOD/install-kernel.sh"
 echo "done. reboot when you want proc0 to start with the translator on."

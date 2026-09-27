@@ -5,7 +5,8 @@
 set -eu
 export SHELL=/BSD/sh
 export HOME=/home/green
-export PATH=/BSD:/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
+export PATH=/home/green/.grok/bin:/BSD:/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
 /etc/rc.d/netwait onestart
 cd /home/green
-exec /home/green/.grok/bin/grok --continue
+# This session, not whichever chat happens to be newest.
+exec grok --resume 01a0ddcd-953a-7f02-963f-1214112e9835 -p "The machine just booted. Continue the current task. Do not wait for input."

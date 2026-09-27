@@ -91,10 +91,17 @@ main(void)
 	uint8_t z[16] __attribute__((aligned(16)));
 	uint8_t expect[16] __attribute__((aligned(16)));
 	struct sigaction sa;
-	int one = 1;
+	int cur = 0, one = 1;
+	size_t sz = sizeof(cur);
 
-	/* kern.amd64compat applies to the calling process, not its parent. */
-	if (sysctlbyname("kern.amd64compat", NULL, NULL, &one, sizeof(one)) != 0) {
+	/* Already on for proc0. A non-root write is EPERM even when the
+	 * value is already 1, so only set it when the read says it is off. */
+	if (sysctlbyname("kern.amd64compat", &cur, &sz, NULL, 0) != 0) {
+		perror("kern.amd64compat");
+		return (1);
+	}
+	if (cur == 0 &&
+	    sysctlbyname("kern.amd64compat", NULL, NULL, &one, sizeof(one)) != 0) {
 		perror("kern.amd64compat");
 		return (1);
 	}

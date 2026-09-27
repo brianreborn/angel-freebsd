@@ -10,6 +10,7 @@ if ! grep -q 'p->p_flag2 = P2_AMD64COMPAT' "$SRC/sys/kern/init_main.c"; then
 	patch -d "$SRC" -p1 < /home/green/Projects/amd64compat/patch/default-on.patch
 fi
 cd "$SRC"
-make -j2 buildkernel KERNCONF=GENERIC-DEBUG NO_KERNELCLEAN=yes
+make -j2 buildkernel KERNCONF=GENERIC-DEBUG \
+	NO_KERNELCLEAN=yes NO_KERNELCONFIG=yes
 /BSD/sh /home/green/Projects/amd64compat/install-kernel.sh
 echo "reboot to make the translator the default for every process."
