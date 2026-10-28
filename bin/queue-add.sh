@@ -5,11 +5,12 @@
 # commands
 # EOF
 set -eu
+RQ_HOME=${RQ_HOME:-/home/${RQ_GROUP:-green}}
 id=${1:?id}
 pend=/var/root-queue/pending
-note=/home/green/root-queue/notes/$id
+note=$RQ_HOME/root-queue/notes/$id
 tmp=$pend/$id.sh.partial
-mkdir -p /home/green/root-queue/notes /home/green/root-queue/wait-log
+mkdir -p $RQ_HOME/root-queue/notes $RQ_HOME/root-queue/wait-log
 if [ ! -p "$note" ]; then
 	mkfifo -m 644 "$note"
 fi

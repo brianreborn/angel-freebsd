@@ -2,9 +2,10 @@
 # Print one DONE or FAILED line when a root-queue result appears.
 # This session is notified on each line. No fifo and no signal.
 set -eu
+RQ_HOME=${RQ_HOME:-/home/${RQ_GROUP:-green}}
 res=/var/root-queue/results
-seen=/home/green/root-queue/seen
-mkdir -p /home/green/root-queue
+seen=$RQ_HOME/root-queue/seen
+mkdir -p $RQ_HOME/root-queue
 touch "$seen"
 while true; do
 	for f in "$res"/*; do
