@@ -84,3 +84,36 @@ Ids already printed are listed in `/home/green/root-queue/seen`.
 ## Shell
 
 Scripts in this system start with `#!/BSD/sh`. `/BSD` is a directory of links to `/rescue`, so `/BSD/sh` is the static FreeBSD shell and is the same length as `/bin/sh`. Do not point a Linux `exec` of `bash` at `/rescue/sh`. Rescue has no `bash` applet (`bash not compiled in`). `/compat/linux/bin/bash` points at `/usr/local/bin/bash`, the ports bash. `/compat/linux/bin/sh` points at `/BSD/sh`.
+
+## Linux and Termux
+
+The scripts now run unchanged on Linux. On FreeBSD every default is the same as before (`green`, `wheel`, `/BSD/sh`, `stat -f`). Root sets these in its own environment:
+
+| Variable | Default | Linux example |
+|---|---|---|
+| `RQ_GROUP` | `green` | the worker's Unix user or group, e.g. `brian` |
+| `RQ_HOME` | `/home/$RQ_GROUP` | `/home/brian` |
+| `RQ_ROOTGRP` | `wheel` on FreeBSD, else `root` | `root` |
+| `RQ_SH` | `/BSD/sh` if present, else `/bin/sh` | `/bin/sh` |
+
+The worker's scripts (`queue-add.sh`, `queue-wait.sh`, `queue-notice.sh`) read `RQ_HOME` or `RQ_GROUP` the same way.
+
+Linux install, for one worker user `U`:
+
+```sh
+git clone https://github.com/brianreborn/angel-freebsd ~/angel-freebsd
+cc -O2 -o ~/bin/queue-poke ~/angel-freebsd/bin/queue-poke.c    # optional fifo wake
+# as root, in its own terminal (tmux/screen), leave running:
+sudo env RQ_GROUP=U RQ_HOME=/home/U sh /home/U/angel-freebsd/bin/root-queue.sh
+# as U:
+RQ_GROUP=U sh ~/angel-freebsd/bin/queue-add.sh 001-hello <<'Q'
+# title: hello
+id -u
+Q
+```
+
+For a root-owned copy of the waiter, use `install -o root -m 755` to put it in `/usr/local/sbin` rather than running it from the worker's home. A worker-owned script that root runs can be edited by the worker. The same applies to `queue-poke`, which root runs from `$RQ_HOME/bin`. Keep root's copies root-owned.
+
+Termux: Android has no root without rooting, so the queue is unused there. Only the worker-side scripts work (with `RQ_HOME=$HOME`).
+
+Tested on Linux (Ubuntu box): `list`, `queue-add.sh`, `run ID` gave `status ran`, `exit 0`, with directory modes 1770 / 0700 / 0755 as on FreeBSD.

@@ -11,6 +11,15 @@
 # Private (root, mode 0700): /var/root-queue/private/
 # The worker cancels by removing its own file from pending before claim.
 set -eu
+# Portability (Linux/Termux): defaults below equal the FreeBSD originals there.
+#   RQ_GROUP  worker group/user (default green)   RQ_HOME  worker home (default /home/$RQ_GROUP)
+#   RQ_ROOTGRP root group (wheel on FreeBSD, root elsewhere)   RQ_SH  job shell (/BSD/sh if present, else /bin/sh)
+# Root's own environment sets these; nothing here is read from a worker-writable file.
+RQ_GROUP=${RQ_GROUP:-green}
+RQ_HOME=${RQ_HOME:-/home/$RQ_GROUP}
+if [ "$(uname -s)" = FreeBSD ]; then RQ_ROOTGRP=${RQ_ROOTGRP:-wheel}; else RQ_ROOTGRP=${RQ_ROOTGRP:-root}; fi
+if [ -x /BSD/sh ]; then RQ_SH=${RQ_SH:-/BSD/sh}; else RQ_SH=${RQ_SH:-/bin/sh}; fi
+fstat() { if [ "$(uname -s)" = FreeBSD ]; then stat -f '%d %i %z %m' "$1"; else stat -c '%d %i %s %Y' "$1"; fi; }
 export PATH=/BSD:/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin
 
 Q=/var/root-queue
@@ -24,10 +33,10 @@ if [ "$(id -u)" -ne 0 ]; then
 	exit 1
 fi
 
-install -d -o root -g green -m 1770 "$PEND"
-install -d -o root -g wheel -m 700 "$PRIV" "$DONE" "$CANC"
-install -d -o root -g green -m 755 "$Q/results"
-install -d -o root -g green -m 1770 "$Q/waiters"
+install -d -o root -g "$RQ_GROUP" -m 1770 "$PEND"
+install -d -o root -g "$RQ_ROOTGRP" -m 700 "$PRIV" "$DONE" "$CANC"
+install -d -o root -g "$RQ_GROUP" -m 755 "$Q/results"
+install -d -o root -g "$RQ_GROUP" -m 1770 "$Q/waiters"
 echo $$ > "$Q/waiter.pid"
 trap 'rm -f "$Q/waiter.pid"' EXIT
 
@@ -78,12 +87,12 @@ claim() {
 			echo "gone: $id" >&2
 			return 1
 		fi
-		before=$(stat -f '%d %i %z %m' "$src")
+		before=$(fstat "$src")
 		cp -f "$src" "$dst.copy"
-		after=$(stat -f '%d %i %z %m' "$src" 2>/dev/null || echo missing)
+		after=$(fstat "$src" 2>/dev/null || echo missing)
 		if [ "$before" = "$after" ]; then
 			mv "$dst.copy" "$dst"
-			chown root:wheel "$dst"
+			chown "root:$RQ_ROOTGRP" "$dst"
 			chmod 700 "$dst"
 			rm -f "$src"
 			echo "$dst"
@@ -102,9 +111,9 @@ record() {
 	code=$3
 	printf 'status %s\nexit %s\n' "$status" "$code" > "$Q/results/$id"
 	chmod 644 "$Q/results/$id"
-	note=/home/green/root-queue/notes/$id
-	if [ -p "$note" ] && [ -x /home/green/bin/queue-poke ]; then
-		/home/green/bin/queue-poke "$note" "$(printf 'status %s exit %s\n' "$status" "$code")" || true
+	note=$RQ_HOME/root-queue/notes/$id
+	if [ -p "$note" ] && [ -x $RQ_HOME/bin/queue-poke ]; then
+		$RQ_HOME/bin/queue-poke "$note" "$(printf 'status %s exit %s\n' "$status" "$code")" || true
 	fi
 }
 
@@ -113,7 +122,7 @@ run_one() {
 	id=$(basename "$f" .sh)
 	echo "== run $id $(title_of "$f") =="
 	set +e
-	/BSD/sh "$f"
+	"$RQ_SH" "$f"
 	code=$?
 	set -e
 	if [ "$code" -ne 0 ]; then

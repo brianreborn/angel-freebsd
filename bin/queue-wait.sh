@@ -2,10 +2,11 @@
 # Block until the root waiter writes this id's fifo. No polling.
 # The result file is also written; if it is already there, return at once.
 set -eu
+RQ_HOME=${RQ_HOME:-/home/${RQ_GROUP:-green}}
 id=${1:?id}
 res=/var/root-queue/results/$id
-note=/home/green/root-queue/notes/$id
-mkdir -p /home/green/root-queue/notes
+note=$RQ_HOME/root-queue/notes/$id
+mkdir -p $RQ_HOME/root-queue/notes
 if [ -f "$res" ]; then
 	cat "$res"
 	code=$(awk '/^exit / { print $2 }' "$res")
